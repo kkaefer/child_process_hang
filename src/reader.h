@@ -2,7 +2,6 @@
 #define NODE_BLEND_SRC_READER_H
 
 #include <png.h>
-#include <jpeglib.h>
 #include <setjmp.h>
 #include <zlib.h>
 #include <assert.h>
@@ -51,26 +50,5 @@ protected:
     png_infop info;
 };
 
-
-class JPEGImageReader : public ImageReader {
-public:
-    JPEGImageReader(unsigned char* src, size_t len);
-    virtual ~JPEGImageReader();
-    unsigned char* decode();
-
-protected:
-    struct JPEGErrorManager {
-        jpeg_error_mgr pub;
-        jmp_buf jump;
-        JPEGImageReader* reader;
-    };
-
-    static void errorHandler(j_common_ptr cinfo);
-    static void errorMessage(j_common_ptr cinfo);
-
-protected:
-    jpeg_decompress_struct info;
-    JPEGErrorManager err;
-};
 
 #endif

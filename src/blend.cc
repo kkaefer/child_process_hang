@@ -35,27 +35,6 @@ Handle<Value> Blend(const Arguments& args) {
 
 
     BlendFormat format = BLEND_FORMAT_PNG;
-    int quality = 80;
-
-    // Validate options
-    if (!options.IsEmpty()) {
-        Local<Value> format_val = options->Get(String::NewSymbol("format"));
-        if (!format_val.IsEmpty() && format_val->BooleanValue()) {
-            if (strcmp(*String::AsciiValue(format_val), "jpeg") == 0 ||
-                strcmp(*String::AsciiValue(format_val), "jpg") == 0) {
-                format = BLEND_FORMAT_JPEG;
-                Local<Value> quality_val = options->Get(String::NewSymbol("quality"));
-                if (!quality_val.IsEmpty() && quality_val->IsInt32()) {
-                    quality = quality_val->Int32Value();
-                    if (quality < 0 || quality > 100) {
-                        return TYPE_EXCEPTION("JPEG quality is range 0-100.");
-                    }
-                }
-            } else if (strcmp(*String::AsciiValue(format_val), "png") != 0) {
-                return TYPE_EXCEPTION("Invalid output format.");
-            }
-        }
-    }
 
     Local<Array> buffers = Local<Array>::Cast(args[0]);
     uint32_t length = buffers->Length();
@@ -73,7 +52,7 @@ Handle<Value> Blend(const Arguments& args) {
             TRY_CATCH_CALL(Context::GetCurrent()->Global(), callback, 2, argv);
         }
     } else {
-        BlendBaton* baton = new BlendBaton(callback, format, quality);
+        BlendBaton* baton = new BlendBaton(callback, format, 90);
         for (uint32_t i = 0; i < length; i++) {
             if (!Buffer::HasInstance(buffers->Get(i))) {
                 delete baton;
@@ -242,12 +221,6 @@ extern "C" void init (Handle<Object> target) {
     target->Set(
         String::NewSymbol("libpng"),
         String::NewSymbol(PNG_LIBPNG_VER_STRING),
-        static_cast<PropertyAttribute>(ReadOnly | DontDelete)
-    );
-
-    target->Set(
-        String::NewSymbol("libjpeg"),
-        Integer::New(JPEG_LIB_VERSION),
         static_cast<PropertyAttribute>(ReadOnly | DontDelete)
     );
 }

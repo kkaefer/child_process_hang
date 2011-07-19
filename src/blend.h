@@ -5,7 +5,6 @@
 #include <node.h>
 #include <node_buffer.h>
 #include <png.h>
-#include <jpeglib.h>
 
 #include <cstdlib>
 #include <cstring>
@@ -18,8 +17,7 @@ typedef std::vector<ImageBuffer> ImageBuffers;
 typedef v8::Persistent<v8::Object> PersistentObject;
 
 enum BlendFormat {
-    BLEND_FORMAT_PNG,
-    BLEND_FORMAT_JPEG
+    BLEND_FORMAT_PNG
 };
 
 #define TRY_CATCH_CALL(context, callback, argc, argv)                          \
