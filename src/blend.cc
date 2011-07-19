@@ -1,6 +1,5 @@
 #include "blend.h"
 #include "reader.h"
-#include "writer.h"
 
 using namespace v8;
 using namespace node;
@@ -68,54 +67,6 @@ Handle<Value> Blend(const Arguments& args) {
     return scope.Close(Undefined());
 }
 
-inline void Blend_CompositeTopDown(unsigned int* images[], int size, unsigned long width, unsigned long height) {
-    size_t length = width * height;
-    for (long px = length - 1; px >= 0; px--) {
-        // Starting pixel
-        unsigned int abgr = images[0][px];
-
-        // Skip if topmost pixel is opaque.
-        if (abgr >= 0xFF000000) continue;
-
-        for (int i = 1; i < size; i++) {
-            if (images[i][px] <= 0x00FFFFFF) {
-                // Lower pixel is fully transparent.
-                continue;
-            } else if (abgr <= 0x00FFFFFF) {
-                // Upper pixel is fully transparent.
-                abgr = images[i][px];
-            } else {
-                // Both pixels have transparency.
-                unsigned int rgba0 = images[i][px];
-                unsigned int rgba1 = abgr;
-
-                // From http://trac.mapnik.org/browser/trunk/include/mapnik/graphics.hpp#L337
-                unsigned a1 = (rgba1 >> 24) & 0xff;
-                unsigned r1 = rgba1 & 0xff;
-                unsigned g1 = (rgba1 >> 8 ) & 0xff;
-                unsigned b1 = (rgba1 >> 16) & 0xff;
-
-                unsigned a0 = (rgba0 >> 24) & 0xff;
-                unsigned r0 = (rgba0 & 0xff) * a0;
-                unsigned g0 = ((rgba0 >> 8 ) & 0xff) * a0;
-                unsigned b0 = ((rgba0 >> 16) & 0xff) * a0;
-
-                a0 = ((a1 + a0) << 8) - a0*a1;
-
-                r0 = ((((r1 << 8) - r0) * a1 + (r0 << 8)) / a0);
-                g0 = ((((g1 << 8) - g0) * a1 + (g0 << 8)) / a0);
-                b0 = ((((b1 << 8) - b0) * a1 + (b0 << 8)) / a0);
-                a0 = a0 >> 8;
-                abgr = (a0 << 24)| (b0 << 16) | (g0 << 8) | (r0);
-            }
-            if (abgr >= 0xFF000000) break;
-        }
-
-        // Merge pixel back.
-        images[0][px] = abgr;
-    }
-}
-
 int EIO_Blend(eio_req *req) {
     BlendBaton* baton = static_cast<BlendBaton*>(req->data);
 
@@ -177,11 +128,6 @@ int EIO_Blend(eio_req *req) {
         }
 
         delete layer;
-    }
-
-    if (!baton->error && size) {
-        Blend_CompositeTopDown(images, size, width, height);
-        Blend_Encode((unsigned char*)images[0], baton, width, height, alpha);
     }
 
     for (int i = 0; i < size; i++) {
